@@ -6,95 +6,133 @@ const path = require('path');
 
 const router = express.Router();
 
-/* ================= ADMIN ROUTES (FIRST) ================= */
+/* =====================================================
+   ADMIN ROUTES (KEEP THESE FIRST)
+   ===================================================== */
 
-// Get all blogs (ADMIN)
+// ✅ GET ALL BLOGS (ADMIN)
 router.get('/admin/all', async (req, res) => {
-  const blogs = await Blog.find().sort({ createdAt: -1 });
-  res.json(blogs);
+  try {
+    const blogs = await Blog.find().sort({ createdAt: -1 });
+    res.json(blogs);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to fetch blogs' });
+  }
 });
 
-/* ================= PUBLIC ROUTES ================= */
+// ✅ DELETE BLOG (ADMIN)
+router.delete('/admin/:id', async (req, res) => {
+  try {
+    const blog = await Blog.findById(req.params.id);
 
-// Get all published blogs
+    if (!blog) {
+      return res.status(404).json({ error: 'Blog not found' });
+    }
+
+    // delete cover image if exists
+    if (blog.coverImage) {
+      const imagePath = path.join(__dirname, '..', blog.coverImage);
+      if (fs.existsSync(imagePath)) {
+        fs.unlinkSync(imagePath);
+      }
+    }
+
+    await Blog.findByIdAndDelete(req.params.id);
+
+    res.json({ message: 'Blog deleted successfully' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to delete blog' });
+  }
+});
+
+/* =====================================================
+   PUBLIC ROUTES
+   ===================================================== */
+
+// ✅ GET ALL PUBLISHED BLOGS
 router.get('/', async (req, res) => {
-  const blogs = await Blog.find({ status: 'published' }).sort({
-    createdAt: -1,
-  });
-  res.json(blogs);
+  try {
+    const blogs = await Blog.find({ status: 'published' }).sort({
+      createdAt: -1,
+    });
+    res.json(blogs);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to fetch blogs' });
+  }
 });
 
-// Get single blog
+// ✅ GET SINGLE BLOG
 router.get('/:id', async (req, res) => {
-  const blog = await Blog.findById(req.params.id);
-  if (!blog) return res.status(404).json({ error: 'Blog not found' });
-  res.json(blog);
+  try {
+    const blog = await Blog.findById(req.params.id);
+    if (!blog) {
+      return res.status(404).json({ error: 'Blog not found' });
+    }
+    res.json(blog);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to fetch blog' });
+  }
 });
 
-/* ================= CREATE ================= */
+/* =====================================================
+   CREATE BLOG
+   ===================================================== */
 
 router.post('/', upload.single('coverImage'), async (req, res) => {
-  const blog = await Blog.create({
-    title: req.body.title,
-    excerpt: req.body.excerpt,
-    content: req.body.content,
-    status: req.body.status,
-    coverImage: req.file
-      ? `/uploads/blogs/${req.file.filename}`
-      : null,
-  });
+  try {
+    const blog = await Blog.create({
+      title: req.body.title,
+      excerpt: req.body.excerpt,
+      content: req.body.content,
+      status: req.body.status || 'published',
+      coverImage: req.file
+        ? `/uploads/blogs/${req.file.filename}`
+        : null,
+    });
 
-  res.status(201).json(blog);
+    res.status(201).json(blog);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to create blog' });
+  }
 });
 
-/* ================= UPDATE ================= */
+/* =====================================================
+   UPDATE BLOG
+   ===================================================== */
 
 router.put('/:id', upload.single('coverImage'), async (req, res) => {
-  const updateData = {
-    title: req.body.title,
-    excerpt: req.body.excerpt,
-    content: req.body.content,
-    status: req.body.status,
-  };
+  try {
+    const updateData = {
+      title: req.body.title,
+      excerpt: req.body.excerpt,
+      content: req.body.content,
+      status: req.body.status,
+    };
 
-  if (req.file) {
-    updateData.coverImage = `/uploads/blogs/${req.file.filename}`;
-  }
+    if (req.file) {
+      updateData.coverImage = `/uploads/blogs/${req.file.filename}`;
+    }
 
-  const blog = await Blog.findByIdAndUpdate(
-    req.params.id,
-    updateData,
-    { new: true }
-  );
-
-  res.json(blog);
-});
-
-/* ================= DELETE (FIXED + IMAGE REMOVE) ================= */
-
-router.delete('/:id', async (req, res) => {
-  const blog = await Blog.findById(req.params.id);
-
-  if (!blog) {
-    return res.status(404).json({ error: 'Blog not found' });
-  }
-
-  // delete image from uploads
-  if (blog.coverImage) {
-    const imagePath = path.join(
-      __dirname,
-      '..',
-      blog.coverImage
+    const blog = await Blog.findByIdAndUpdate(
+      req.params.id,
+      updateData,
+      { new: true }
     );
 
-    if (fs.existsSync(imagePath)) {
-      fs.unlinkSync(imagePath);
+    if (!blog) {
+      return res.status(404).json({ error: 'Blog not found' });
     }
+
+    res.json(blog);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to update blog' });
   }
-
-  await Blog.findByIdAndDelete(req.params.id);
-
-  res.json({ message: 'Blog deleted successfully' });
 });
 
 module.exports = router;
