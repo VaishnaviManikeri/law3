@@ -12,28 +12,35 @@ connectDB();
 
 const app = express();
 
-// ================= MIDDLEWARE =================
+// ================= CORS CONFIG =================
 app.use(
   cors({
-    origin: '*', // allow all (safe for now; can restrict later)
+    origin: '*', // allow all (safe for now; restrict later)
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    credentials: false,
   })
 );
 
+// ================= BODY PARSERS =================
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ================= TEST ROUTES =================
+// ================= STATIC FILES (IMAGES) =================
+// IMPORTANT: This allows access to uploaded blog images
+// Example URL:
+// https://your-backend.onrender.com/uploads/blogs/imagename.jpg
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Root test route (VERY IMPORTANT for Render 404 check)
+// ================= ROOT TEST ROUTE =================
+// Required for Render health check
 app.get('/', (req, res) => {
   res.send('Backend is running successfully 🚀');
 });
 
-// API test route
+// ================= API TEST ROUTE =================
 app.use('/api/test', require('./routes/testRoutes'));
 
-// ================= MAIN ROUTES =================
+// ================= MAIN API ROUTES =================
 app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/gallery', require('./routes/galleryRoutes'));
 app.use('/api/announcements', require('./routes/announcementRoutes'));
@@ -42,18 +49,19 @@ app.use('/api/blogs', require('./routes/blogRoutes'));
 
 // ================= 404 HANDLER =================
 app.use((req, res) => {
-  res.status(404).json({ error: 'API route not found' });
+  res.status(404).json({
+    error: 'API route not found',
+    path: req.originalUrl,
+  });
 });
 
-
-
-
-// ================= ERROR HANDLER =================
+// ================= GLOBAL ERROR HANDLER =================
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({
+  console.error('🔥 ERROR:', err.stack);
+
+  res.status(err.status || 500).json({
     error: 'Something went wrong!',
-    details: err.message,
+    message: err.message,
   });
 });
 

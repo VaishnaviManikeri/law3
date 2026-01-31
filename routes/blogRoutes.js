@@ -1,5 +1,6 @@
 const express = require('express');
 const Blog = require('../models/Blog');
+const upload = require('../middleware/uploadBlog');
 const router = express.Router();
 
 /* ================= PUBLIC ================= */
@@ -25,21 +26,32 @@ router.get('/admin/all', async (req, res) => {
   res.json(blogs);
 });
 
-// Create blog
-router.post('/', async (req, res) => {
-  const blog = await Blog.create(req.body);
+// CREATE blog with image
+router.post('/', upload.single('coverImage'), async (req, res) => {
+  const blog = await Blog.create({
+    ...req.body,
+    coverImage: req.file ? `/uploads/blogs/${req.file.filename}` : '',
+  });
+
   res.status(201).json(blog);
 });
 
-// Update blog
-router.put('/:id', async (req, res) => {
-  const blog = await Blog.findByIdAndUpdate(req.params.id, req.body, {
+// UPDATE blog with image
+router.put('/:id', upload.single('coverImage'), async (req, res) => {
+  const data = { ...req.body };
+
+  if (req.file) {
+    data.coverImage = `/uploads/blogs/${req.file.filename}`;
+  }
+
+  const blog = await Blog.findByIdAndUpdate(req.params.id, data, {
     new: true,
   });
+
   res.json(blog);
 });
 
-// Delete blog
+// DELETE blog
 router.delete('/:id', async (req, res) => {
   await Blog.findByIdAndDelete(req.params.id);
   res.json({ message: 'Blog deleted' });
