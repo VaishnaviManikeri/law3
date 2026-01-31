@@ -21,8 +21,8 @@ router.get('/admin/all', async (req, res) => {
   }
 });
 
-// ✅ DELETE BLOG (ADMIN)
-router.delete('/:id', async (req, res) => {
+// ✅ DELETE BLOG (ADMIN ONLY)
+router.delete('/admin/:id', async (req, res) => {
   try {
     const blog = await Blog.findById(req.params.id);
 
@@ -30,7 +30,7 @@ router.delete('/:id', async (req, res) => {
       return res.status(404).json({ error: 'Blog not found' });
     }
 
-    // delete cover image if exists
+    // delete image if exists
     if (blog.coverImage) {
       const imagePath = path.join(__dirname, '..', blog.coverImage);
       if (fs.existsSync(imagePath)) {
@@ -59,7 +59,6 @@ router.get('/', async (req, res) => {
     });
     res.json(blogs);
   } catch (err) {
-    console.error(err);
     res.status(500).json({ error: 'Failed to fetch blogs' });
   }
 });
@@ -73,7 +72,6 @@ router.get('/:id', async (req, res) => {
     }
     res.json(blog);
   } catch (err) {
-    console.error(err);
     res.status(500).json({ error: 'Failed to fetch blog' });
   }
 });
@@ -96,7 +94,6 @@ router.post('/', upload.single('coverImage'), async (req, res) => {
 
     res.status(201).json(blog);
   } catch (err) {
-    console.error(err);
     res.status(500).json({ error: 'Failed to create blog' });
   }
 });
@@ -130,7 +127,6 @@ router.put('/:id', upload.single('coverImage'), async (req, res) => {
 
     res.json(blog);
   } catch (err) {
-    console.error(err);
     res.status(500).json({ error: 'Failed to update blog' });
   }
 });
