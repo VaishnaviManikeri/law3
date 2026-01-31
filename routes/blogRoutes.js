@@ -1,10 +1,20 @@
 const express = require('express');
 const Blog = require('../models/Blog');
 const upload = require('../middleware/uploadBlog');
+const fs = require('fs');
+const path = require('path');
 
 const router = express.Router();
 
-/* ================= PUBLIC ================= */
+/* ================= ADMIN ROUTES (FIRST) ================= */
+
+// Get all blogs (ADMIN)
+router.get('/admin/all', async (req, res) => {
+  const blogs = await Blog.find().sort({ createdAt: -1 });
+  res.json(blogs);
+});
+
+/* ================= PUBLIC ROUTES ================= */
 
 // Get all published blogs
 router.get('/', async (req, res) => {
@@ -21,15 +31,8 @@ router.get('/:id', async (req, res) => {
   res.json(blog);
 });
 
-/* ================= ADMIN ================= */
+/* ================= CREATE ================= */
 
-// Get all blogs
-router.get('/admin/all', async (req, res) => {
-  const blogs = await Blog.find().sort({ createdAt: -1 });
-  res.json(blogs);
-});
-
-// Create blog
 router.post('/', upload.single('coverImage'), async (req, res) => {
   const blog = await Blog.create({
     title: req.body.title,
@@ -44,7 +47,8 @@ router.post('/', upload.single('coverImage'), async (req, res) => {
   res.status(201).json(blog);
 });
 
-// Update blog
+/* ================= UPDATE ================= */
+
 router.put('/:id', upload.single('coverImage'), async (req, res) => {
   const updateData = {
     title: req.body.title,
@@ -66,9 +70,30 @@ router.put('/:id', upload.single('coverImage'), async (req, res) => {
   res.json(blog);
 });
 
-// Delete blog
+/* ================= DELETE (FIXED + IMAGE REMOVE) ================= */
+
 router.delete('/:id', async (req, res) => {
+  const blog = await Blog.findById(req.params.id);
+
+  if (!blog) {
+    return res.status(404).json({ error: 'Blog not found' });
+  }
+
+  // delete image from uploads
+  if (blog.coverImage) {
+    const imagePath = path.join(
+      __dirname,
+      '..',
+      blog.coverImage
+    );
+
+    if (fs.existsSync(imagePath)) {
+      fs.unlinkSync(imagePath);
+    }
+  }
+
   await Blog.findByIdAndDelete(req.params.id);
+
   res.json({ message: 'Blog deleted successfully' });
 });
 
