@@ -12,16 +12,33 @@ connectDB();
 
 const app = express();
 
-// ================= MIDDLEWARE =================
+// ================= CORS CONFIGURATION =================
+const allowedOrigins = [
+  'http://localhost:3000',               // Local development
+  'http://localhost:5173',               // Vite local (if using)
+  'https://jadhavarcollegeoflaw.com',    // Production frontend
+  'https://www.jadhavarcollegeoflaw.com' // WWW version
+];
+
 app.use(
   cors({
-    origin: '*',
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like Postman, mobile apps)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    credentials: true,
     allowedHeaders: ['Content-Type', 'Authorization'],
   })
 );
 
-
+// ================= MIDDLEWARE =================
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -57,6 +74,7 @@ app.use((err, req, res, next) => {
 
 // ================= START SERVER =================
 const PORT = process.env.PORT || 5000;
+
 app.listen(PORT, () =>
   console.log(`🚀 Server running on port ${PORT}`)
 );
