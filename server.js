@@ -50,6 +50,11 @@ app.get('/', (req, res) => {
   res.send('Backend is running successfully 🚀');
 });
 
+// ================= ✅ PING ROUTE (ADDED) =================
+app.get('/ping', (req, res) => {
+  res.send('✅ Server is alive');
+});
+
 // ================= ROUTES =================
 app.use('/api/test', require('./routes/testRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
