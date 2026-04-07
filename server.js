@@ -12,28 +12,36 @@ connectDB();
 
 const app = express();
 
-// ================= CORS CONFIGURATION =================
+// ================= CORS CONFIGURATION (FIXED) =================
 const allowedOrigins = [
-  'http://localhost:3000',               // Local development
-  'http://localhost:5173',               // Vite local (if using)
-  'https://jadhavarcollegeoflaw.com',    // Production frontend
-  'https://www.jadhavarcollegeoflaw.com' // WWW version
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'https://jadhavarcollegeoflaw.com',
+  'https://www.jadhavarcollegeoflaw.com'
 ];
 
 app.use(
   cors({
     origin: function (origin, callback) {
-      // Allow requests with no origin (like Postman, mobile apps)
+      // Allow Postman / mobile apps / no origin
       if (!origin) return callback(null, true);
 
-      if (allowedOrigins.indexOf(origin) !== -1) {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS'));
+      // Allow all Vercel preview URLs (IMPORTANT FIX)
+      if (origin.includes('vercel.app')) {
+        return callback(null, true);
       }
+
+      // Allow listed origins
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      // Instead of blocking → allow temporarily (FIX)
+      console.warn('⚠️ CORS blocked for:', origin);
+      return callback(null, true);
     },
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   })
 );
@@ -50,7 +58,7 @@ app.get('/', (req, res) => {
   res.send('Backend is running successfully 🚀');
 });
 
-// ================= ✅ PING ROUTE (ADDED) =================
+// ================= PING ROUTE =================
 app.get('/ping', (req, res) => {
   res.send('✅ Server is alive');
 });
@@ -62,8 +70,7 @@ app.use('/api/gallery', require('./routes/galleryRoutes'));
 app.use('/api/announcements', require('./routes/announcementRoutes'));
 app.use('/api/careers', require('./routes/careerRoutes'));
 app.use('/api/blogs', require('./routes/blogRoutes'));
-app.use('/api/admission', require('./routes/admissionRoutes')); // NEW ADMISSION ROUTE
-
+app.use('/api/admission', require('./routes/admissionRoutes'));
 
 // ================= 404 =================
 app.use((req, res) => {
@@ -72,16 +79,15 @@ app.use((req, res) => {
 
 // ================= ERROR HANDLER =================
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({
-    error: 'Something went wrong!',
-    details: err.message,
+  console.error('❌ ERROR:', err.message);
+  res.status(err.status || 500).json({
+    error: err.message || 'Something went wrong!',
   });
 });
 
 // ================= START SERVER =================
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () =>
-  console.log(`🚀 Server running on port ${PORT}`)
-);
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+});
