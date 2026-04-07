@@ -7,6 +7,12 @@ const blogSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    slug: {
+      type: String,
+      unique: true,
+      sparse: true,
+      trim: true,
+    },
     excerpt: {
       type: String,
       required: true,
@@ -26,10 +32,25 @@ const blogSchema = new mongoose.Schema(
       default: 'published',
     },
     coverImage: {
-      type: String, // stores image path
+      type: String,
+    },
+    metaTitle: {
+      type: String,
+      maxlength: 60,
+    },
+    metaDescription: {
+      type: String,
+      maxlength: 160,
+    },
+    views: {
+      type: Number,
+      default: 0,
     },
   },
   { timestamps: true }
 );
+
+// Create index for slug
+blogSchema.index({ slug: 1 });
 
 module.exports = mongoose.model('Blog', blogSchema);
