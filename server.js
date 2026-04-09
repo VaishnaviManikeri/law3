@@ -1,4 +1,6 @@
 const express = require('express');
+const fs = require('fs');   // ✅ only once
+
 const cors = require('cors');
 const path = require('path');
 const dotenv = require('dotenv');
