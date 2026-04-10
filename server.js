@@ -63,7 +63,9 @@ app.get('/', (req, res) => {
 app.get('/ping', (req, res) => {
   res.send('✅ Server is alive');
 });
-
+app.get('/api', (req, res) => {
+  res.send('API is working 🚀');
+});
 // ================= ROUTES =================
 app.use('/api/test', require('./routes/testRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
